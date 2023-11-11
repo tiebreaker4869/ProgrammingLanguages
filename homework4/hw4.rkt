@@ -78,3 +78,20 @@
                       res-in-lst))))))
       cached-assoc))
   )
+
+(define-syntax while-greater
+  (syntax-rules(while-greater do)
+    [(while-greater e1 do e2)
+     (let [(val1 e1)]
+       (begin
+         (define infinite-e2 (lambda () (cons e2 infinite-e2)))
+         (define (compute thunk)
+           (let [(p (thunk))]
+             (if (<= (car p) val1)
+                 #t
+                 (compute (cdr p)))))
+         (compute infinite-e2))
+         )
+     ]
+    )
+  )
