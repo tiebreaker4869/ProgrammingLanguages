@@ -110,11 +110,16 @@
         
 ;; Problem 3
 
-(define (ifmunit e1 e2 e3) "CHANGE")
+(define (ifmunit e1 e2 e3)
+  (ifnz (ismunit e1) e2 e3))
 
-(define (mlet* bs e2) "CHANGE")
+(define (mlet* bs e2)
+  (cond
+    [(null? bs) e2]
+    [#t (mlet (car (car bs)) (cdr (car bs)) (mlet* (cdr bs) e2))]))
 
-(define (ifeq e1 e2 e3 e4) "CHANGE")
+(define (ifeq e1 e2 e3 e4)
+  (mlet* (list (cons "_x" e1) (cons "_y" e2)) (ifnz (add (isgreater e1 e2) (isgreater e2 e1)) e4 e3)))
 
 ;; Problem 4
 
