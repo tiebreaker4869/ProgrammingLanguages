@@ -44,3 +44,23 @@
     [#t (error "unsupported constructs")])
   )
 
+(define (orelse e1 e2)
+  (if-then-else e1 (bool #t) (if-then-else e2 (bool #t) (bool #f)))
+  )
+
+(define (negative-square e)
+  (negate (multiply e e))
+  )
+
+(define (abs-eq e1 e2)
+  (eq-num (negative-square e1) (negative-square e2))
+  )
+
+(define (powh y)
+  (if (eq? y 1)
+      (quote x)
+      (quasiquote (* x (unquote (powh (- y 1)))))))
+
+(define (pow y)
+  (let ([mul-exp (powh y)])
+    (eval (quasiquote (lambda (x) (unquote mul-exp))))))
