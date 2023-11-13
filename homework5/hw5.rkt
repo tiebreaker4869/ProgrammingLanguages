@@ -87,7 +87,7 @@
                            (error "MUPL second applied to non-pair")))]
         [(munit? e) e]
         [(int? e) e]
-        [(ismunit? e) (if (munit? (ismunit-e e))
+        [(ismunit? e) (if (munit? (eval-under-env (ismunit-e e) env))
                           (int 1)
                           (int 0))]
         [(fun? e) (closure env e)]
@@ -123,11 +123,18 @@
 
 ;; Problem 4
 
-(define mupl-filter "CHANGE")
+(define mupl-filter
+  (fun "_mupl-filter" "_f"
+       (fun "_filter" "_xs"
+            (ifmunit (var "_xs")
+                     (munit)
+                     (ifnz (call (var "_f") (first (var "_xs")))
+                           (apair (first (var "_xs")) (call (var "_filter") (second (var "_xs"))))
+                           (call (var "_filter") (second (var "_xs"))))))))
 
 (define mupl-all-gt
   (mlet "filter" mupl-filter
-        "CHANGE (notice filter is now in MUPL scope)"))
+        (fun "_mupl-all-gt" "_n" (call (var "filter") (fun null "_num" (ifnz (isgreater (var "_num") (var "_n")) (int 1) (int 0)))))))
 
 ;; Challenge Problem
 
@@ -144,3 +151,4 @@
 ;; Do NOT change this
 (define (eval-exp-c e)
   (eval-under-env-c (compute-free-vars e) null))
+
