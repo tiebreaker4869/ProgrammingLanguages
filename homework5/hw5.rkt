@@ -142,7 +142,53 @@
 
 ;; We will test this function directly, so it must do
 ;; as described in the assignment
-(define (compute-free-vars e) "CHANGE")
+(define (compute-free-vars e)
+  (cond
+    [(var? e) e]
+    [(int? e) e]
+    [(add? e) (let ([e1-computed (compute-free-vars (add-e1 e))]
+                    [e2-computed (compute-free-vars (add-e2 e))])
+                (add e1-computed e2-computed))]
+    [(isgreater? e) (let ([e1-computed (compute-free-vars (isgreater-e1 e))]
+                          [e2-computed (compute-free-vars (isgreater-e2 e))])
+                          (isgreater e1-computed e2-computed))]
+    [(ifnz? e) (let ([e1-computed (compute-free-vars (ifnz-e1 e))]
+                     [e2-computed (compute-free-vars (ifnz-e2 e))]
+                     [e3-computed (compute-free-vars (ifnz-e3 e))])
+                 (ifnz e1-computed e2-computed e3-computed))]
+    [(fun? e)(begin
+               (define (gather-vars expr)
+                 (cond
+                   [(var? expr) (set (var-string expr))]
+                   [(int? expr) (set)]
+                   [(add? expr) (set-union (gather-vars (add-e1 expr)) (gather-vars (add-e2 expr)))]
+                   [(isgreater? expr) (set-union (gather-vars (isgreater-e1 expr)) (gather-vars (isgreater-e2 expr)))]
+                   [(ifnz? expr) (set-union (gather-vars (ifnz-e1 expr)) (gather-vars (ifnz-e2 expr)) (gather-vars (ifnz-e3 expr)))]
+                   [(fun? expr) (let ([free-vars-in-subexpr (gather-vars (fun-body expr))])
+                                  (set-remove (set-remove free-vars-in-subexpr (fun-nameopt expr)) (fun-formal expr)))]
+                   [(call? expr) (set-union (gather-vars (call-funexp expr)) (gather-vars (call-actual expr)))]
+                   [(mlet? expr) (set-union (gather-vars (mlet-e expr)) (gather-vars (mlet-body expr)))]
+                   [(apair? expr) (set-union (gather-vars (apair-e1 expr)) (gather-vars (apair-e2 expr)))]
+                   [(first? expr) (gather-vars (first-e expr))]
+                   [(second? expr) (gather-vars (second-e expr))]
+                   [(munit? expr) (set)]
+                   [(ismunit? expr) (gather-vars (ismunit-e expr))]
+                   [#t (error "gather-vars on non-MUPL expression")]))
+               (fun-challenge (fun-nameopt e) (fun-formal e) (fun-body e) (gather-vars e)))]
+    [(call? e) (let ([funexp-computed (compute-free-vars (call-funexp e))]
+                     [actual-computed (compute-free-vars (call-actual e))])
+                 (call funexp-computed actual-computed))]
+    [(mlet? e) (let ([e-computed (compute-free-vars (mlet-e e))]
+                     [body-computed (compute-free-vars (mlet-body e))])
+                     (mlet (mlet-var e) e-computed body-computed))]
+    [(apair? e) (let ([e1-computed (compute-free-vars (apair-e1 e))]
+                      [e2-computed (compute-free-vars (apair-e2 e))])
+                  (apair e1-computed e2-computed))]
+    [(first? e) (first (compute-free-vars (first-e e)))]
+    [(second? e) (second (compute-free-vars (second-e e)))]
+    [(munit? e) e]
+    [(ismunit? e) (ismunit (compute-free-vars (ismunit-e e)))]
+    [#t (error "compute-free-vars on non-MUPL expression")]))
 
 ;; Do NOT share code with eval-under-env because that will make grading
 ;; more difficult, so copy most of your interpreter here and make minor changes
