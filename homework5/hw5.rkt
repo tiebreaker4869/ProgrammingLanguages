@@ -192,7 +192,67 @@
 
 ;; Do NOT share code with eval-under-env because that will make grading
 ;; more difficult, so copy most of your interpreter here and make minor changes
-(define (eval-under-env-c e env) "CHANGE")
+(define (eval-under-env-c e env)
+  (cond [(var? e) 
+         (envlookup env (var-string e))]
+        [(add? e) 
+         (let ([v1 (eval-under-env-c (add-e1 e) env)]
+               [v2 (eval-under-env-c (add-e2 e) env)])
+           (if (and (int? v1)
+                    (int? v2))
+               (int (+ (int-num v1) 
+                       (int-num v2)))
+               (error "MUPL addition applied to non-number")))]
+        [(isgreater? e)
+         (let ([v1 (eval-under-env-c (isgreater-e1 e) env)]
+               [v2 (eval-under-env-c (isgreater-e2 e) env)])
+           (if (and (int? v1)
+                    (int? v2))
+               (if (> (int-num v1) (int-num v2))
+                   (int 1)
+                   (int 0))
+               (error "MUPL isgreater applied to non-number")))]
+        [(ifnz? e) (let ([v1 (eval-under-env-c (ifnz-e1 e) env)])
+                     (if (int? v1)
+                         (if (= 0 (int-num v1))
+                             (eval-under-env-c (ifnz-e3 e) env)
+                             (eval-under-env-c (ifnz-e2 e) env))
+                         (error "MUPL ifnz condition applied to non-number")))]
+        [(apair? e) (let ([v1 (eval-under-env-c (apair-e1 e) env)]
+                          [v2 (eval-under-env-c (apair-e2 e) env)])
+                      (apair v1 v2))]
+        [(first? e) (let ([v1 (eval-under-env-c (first-e e) env)])
+                      (if (apair? v1)
+                          (apair-e1 v1)
+                          (error "MUPL first applied to non-pair")))]
+        [(second? e) (let ([v1 (eval-under-env-c (second-e e) env)])
+                       (if (apair? v1)
+                           (apair-e2 v1)
+                           (error "MUPL second applied to non-pair")))]
+        [(munit? e) e]
+        [(int? e) e]
+        [(ismunit? e) (if (munit? (eval-under-env-c (ismunit-e e) env))
+                          (int 1)
+                          (int 0))]
+        [(fun-challenge? e) (begin
+                              (define (save-free-vars vars)
+                                (if (null? vars)
+                                    null
+                                    (cons (assoc (car vars) env) (save-free-vars (cdr vars)))))
+                              (let ([shrink-env (save-free-vars (set->list (fun-challenge-freevars)))])
+                                (closure shrink-env e)))]
+        [(mlet? e) (let ([v1 (eval-under-env-c (mlet-e e) env)])
+                     (eval-under-env-c (mlet-body e) (cons (cons (mlet-var e) v1) env)))]
+        [(call? e) (let ([v1 (eval-under-env-c (call-funexp e) env)]
+                         [v2 (eval-under-env-c (call-actual e) env)])
+                     (if (closure? v1)
+                         (let ([extend-arg-env (cons (cons (fun-formal (closure-fun v1)) v2) (closure-env v1))])
+                           (if (null? (fun-nameopt (closure-fun v1)))
+                               (eval-under-env-c (fun-body (closure-fun v1)) extend-arg-env)
+                               (eval-under-env-c (fun-body (closure-fun v1)) (cons (cons (fun-nameopt (closure-fun v1)) v1) extend-arg-env))))
+                         (error "MUPL call applied to non-closure")))]
+        ;; CHANGE add more cases here
+        [#t (error (format "bad MUPL expression: ~v" e))]))
 
 ;; Do NOT change this
 (define (eval-exp-c e)
