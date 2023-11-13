@@ -239,17 +239,17 @@
                                 (if (null? vars)
                                     null
                                     (cons (assoc (car vars) env) (save-free-vars (cdr vars)))))
-                              (let ([shrink-env (save-free-vars (set->list (fun-challenge-freevars)))])
+                              (let ([shrink-env (save-free-vars (set->list (fun-challenge-freevars e)))])
                                 (closure shrink-env e)))]
         [(mlet? e) (let ([v1 (eval-under-env-c (mlet-e e) env)])
                      (eval-under-env-c (mlet-body e) (cons (cons (mlet-var e) v1) env)))]
         [(call? e) (let ([v1 (eval-under-env-c (call-funexp e) env)]
                          [v2 (eval-under-env-c (call-actual e) env)])
                      (if (closure? v1)
-                         (let ([extend-arg-env (cons (cons (fun-formal (closure-fun v1)) v2) (closure-env v1))])
-                           (if (null? (fun-nameopt (closure-fun v1)))
-                               (eval-under-env-c (fun-body (closure-fun v1)) extend-arg-env)
-                               (eval-under-env-c (fun-body (closure-fun v1)) (cons (cons (fun-nameopt (closure-fun v1)) v1) extend-arg-env))))
+                         (let ([extend-arg-env (cons (cons (fun-challenge-formal (closure-fun v1)) v2) (closure-env v1))])
+                           (if (null? (fun-challenge-nameopt (closure-fun v1)))
+                               (eval-under-env-c (fun-challenge-body (closure-fun v1)) extend-arg-env)
+                               (eval-under-env-c (fun-challenge-body (closure-fun v1)) (cons (cons (fun-challenge-nameopt (closure-fun v1)) v1) extend-arg-env))))
                          (error "MUPL call applied to non-closure")))]
         ;; CHANGE add more cases here
         [#t (error (format "bad MUPL expression: ~v" e))]))

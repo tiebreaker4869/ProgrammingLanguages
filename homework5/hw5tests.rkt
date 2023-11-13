@@ -25,6 +25,12 @@
                                    (list (int 10) (int 9) (int 15))))))
                  (list (int 10) (int 15))
                  "provided combined test using problems 1, 2, and 4")
+   (let ([program (call (mlet "x" (int 1) (fun null "_i" (add (var "x") (var "_i")))) (int 5))])
+     (check-equal? (eval-exp program) (eval-exp-c program)))
+
+   (let ([program
+          (call (fun "_sum_n" "_n" (ifnz (var "_n") (add (var "_n") (call (var "_sum_n") (add (var "_n") (int -1)))) (int 0))) (int 5))])
+     (check-equal? (eval-exp program) (eval-exp-c program)))
    ))
 
 (require rackunit/text-ui)
